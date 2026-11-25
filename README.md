@@ -6,6 +6,8 @@ Being the account's `.github` repository, it also gives its [default community h
 
 Repositories always reference a release tag (`X.Y.Z`) of the kit, never a branch. Renovate moves these references in a single `repo-kit` pull request.
 
+What runs and when in an adopting repository: [docs/lifecycle.md](docs/lifecycle.md).
+
 ## Contents
 
 | Path | What it is |
