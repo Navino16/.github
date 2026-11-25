@@ -30,50 +30,70 @@
   },
   "packageRules": [
     {
-      "description": "Group and auto-merge npm and bun minor and patch updates",
+      "description": "Only patch, digest and pin updates are auto-merged: they land without a reviewer",
+      "matchUpdateTypes": [
+        "patch",
+        "digest",
+        "pin",
+        "pinDigest"
+      ],
+      "automerge": true
+    },
+    {
+      "description": "Group npm and bun patch, digest and pin updates",
       "matchManagers": [
         "npm",
         "bun"
       ],
       "matchUpdateTypes": [
-        "minor",
-        "patch"
+        "patch",
+        "digest",
+        "pin",
+        "pinDigest"
       ],
-      "groupName": "code-dependencies",
-      "automerge": true
+      "groupName": "code-dependencies"
     },
     {
-      "description": "Group and auto-merge GitHub Actions minor and patch updates",
+      "description": "Group GitHub Actions patch, digest and pin updates",
       "matchManagers": [
         "github-actions"
       ],
       "matchUpdateTypes": [
-        "minor",
-        "patch"
+        "patch",
+        "digest",
+        "pin",
+        "pinDigest"
       ],
-      "groupName": "ci-dependencies",
-      "automerge": true
+      "groupName": "ci-dependencies"
     },
     {
-      "description": "Group and auto-merge Docker image minor and patch updates (Dockerfile and compose files)",
+      "description": "Group Docker image patch, digest and pin updates (Dockerfile and compose files)",
       "matchManagers": [
         "dockerfile",
         "docker-compose"
       ],
       "matchUpdateTypes": [
-        "minor",
-        "patch"
+        "patch",
+        "digest",
+        "pin",
+        "pinDigest"
       ],
-      "groupName": "docker-dependencies",
-      "automerge": true
+      "groupName": "docker-dependencies"
     },
     {
-      "description": "Move every reference to this kit (workflows and preset) in one auto-merged pull request; the major rule below still holds majors back",
+      "description": "Minors wait for a review in one weekly pull request",
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "groupName": "minor-dependencies",
+      "automerge": false
+    },
+    {
+      "description": "Move every reference to this kit (workflows and preset) in one pull request, auto-merged only for a patch release",
       "matchPackageNames": [
         "Navino16/.github"
       ],
-      "groupName": "repo-kit",
-      "automerge": true
+      "groupName": "repo-kit"
     },
     {
       "description": "Majors are never auto-merged; post-it picks them up through the major label",
