@@ -1,0 +1,53 @@
+name: Kit check
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: kit-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: Static
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+
+      - name: Run the checks
+        run: scripts/check.sh
+
+  fixture-npm:
+    name: Fixture npm
+    uses: ./.github/workflows/ci.yml
+    with:
+      working-directory: tests/fixtures/npm
+      ref: ${{ github.event.pull_request.head.sha }}
+      typecheck-script: ''
+      codecov: false
+
+  fixture-pnpm:
+    name: Fixture pnpm
+    uses: ./.github/workflows/ci.yml
+    with:
+      package-manager: pnpm
+      working-directory: tests/fixtures/pnpm
+      codecov: false
+
+  fixture-bun:
+    name: Fixture bun
+    uses: ./.github/workflows/ci.yml
+    with:
+      package-manager: bun
+      working-directory: tests/fixtures/bun
+      codecov: false

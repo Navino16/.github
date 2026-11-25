@@ -1,0 +1,12 @@
+{
+  "name": "fixture-bun",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "echo lint ok",
+    "build": "echo build ok",
+    "test:coverage": "mkdir -p .reports/coverage && echo '<coverage/>' > .reports/coverage/cobertura-coverage.xml && echo '<testsuites/>' > .reports/junit.xml",
+    "typecheck": "echo typecheck ok"
+  }
+}
