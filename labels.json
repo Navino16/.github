@@ -1,0 +1,15 @@
+[
+  { "name": "agent-log", "color": "c5def5", "description": "Opened by an AI agent; ignored by the post-it scanner" },
+  { "name": "maintenance:post-it", "color": "bfd4f2", "description": "Taken over by a post-it maintenance ticket" },
+  { "name": "triage", "color": "fbca04", "description": "Issue needs to be reviewed" },
+  { "name": "major", "color": "d93f0b", "description": "Major dependency update" },
+  { "name": "bug", "color": "d73a4a", "description": "Something isn't working" },
+  { "name": "enhancement", "color": "a2eeef", "description": "New feature or request" },
+  { "name": "breaking change", "color": "b60205", "description": "Breaking changes that require user action" },
+  { "name": "dependencies", "color": "0366d6", "description": "Pull requests that update a dependency file" },
+  { "name": "security", "color": "b60205", "description": "Security" },
+  { "name": "infra", "color": "0052cc", "description": "Infra / CI / Docker" },
+  { "name": "documentation", "color": "0075ca", "description": "Improvements or additions to documentation" },
+  { "name": "frontend", "color": "1d76db", "description": "Frontend / UI" },
+  { "name": "backend", "color": "5319e7", "description": "Backend / services" }
+]

@@ -9,3 +9,6 @@ step() { printf '\n== %s\n' "$1"; }
 
 step "Renovate configs"
 npx --yes --package "renovate@${RENOVATE_VERSION}" -- renovate-config-validator --strict --no-global default.json renovate.json
+
+step "Label sync"
+tests/sync-labels.test.sh
