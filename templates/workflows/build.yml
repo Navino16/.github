@@ -19,8 +19,6 @@ jobs:
     uses: Navino16/.github/.github/workflows/ci.yml@1.0.0
     permissions:
       contents: read
-    with:
-      codecov: false
     secrets: inherit
 
   build:
