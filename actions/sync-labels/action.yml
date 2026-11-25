@@ -1,0 +1,19 @@
+name: Sync labels
+description: Create or update the shared labels of Navino16/.github in a repository
+inputs:
+  token:
+    description: Token allowed to write the repository's labels (issues write)
+    default: ${{ github.token }}
+  repository:
+    description: Repository to sync, as owner/repo
+    default: ${{ github.repository }}
+runs:
+  using: composite
+  steps:
+    - name: Sync labels
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        REPOSITORY: ${{ inputs.repository }}
+        KIT_DIR: ${{ github.action_path }}/../..
+      run: bash "$KIT_DIR/actions/sync-labels/sync-labels.sh" "$KIT_DIR/labels.json" "$REPOSITORY"

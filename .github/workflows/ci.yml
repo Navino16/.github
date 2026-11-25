@@ -1,0 +1,231 @@
+name: CI
+
+on:
+  workflow_call:
+    inputs:
+      package-manager:
+        description: npm, pnpm or bun
+        type: string
+        default: npm
+      working-directory:
+        description: Directory holding package.json
+        type: string
+        default: .
+      ref:
+        description: Ref to check out; empty for the commit of the triggering event
+        type: string
+        default: ''
+      node-version-file:
+        description: Node version file, relative to working-directory; Node is not set up when it is missing
+        type: string
+        default: .nvmrc
+      bun-version:
+        type: string
+        default: latest
+      lint-script:
+        description: Script run by the Lint job; empty to skip
+        type: string
+        default: lint
+      typecheck-script:
+        description: Script run after the build; empty to skip
+        type: string
+        default: typecheck
+      build-script:
+        description: Script run by the Build job; empty to skip
+        type: string
+        default: build
+      test-script:
+        description: Script run by the Test job; empty to skip
+        type: string
+        default: test:coverage
+      e2e:
+        description: Run the Playwright end-to-end job
+        type: boolean
+        default: false
+      e2e-script:
+        type: string
+        default: test:e2e
+      codecov:
+        description: Upload coverage and test results to Codecov when CODECOV_TOKEN is set
+        type: boolean
+        default: true
+      coverage-files:
+        description: Coverage reports, relative to working-directory
+        type: string
+        default: .reports/coverage/cobertura-coverage.xml
+      junit-files:
+        description: JUnit test results, relative to working-directory
+        type: string
+        default: .reports/junit.xml
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: '0'
+  PM: ${{ inputs.package-manager }}
+
+jobs:
+  lint:
+    name: Lint
+    if: inputs.lint-script != ''
+    runs-on: ubuntu-latest
+    defaults:
+      run: &run-defaults
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - &checkout
+        name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - &check-package-manager
+        name: Check the package manager
+        if: ${{ !contains(fromJSON('["npm", "pnpm", "bun"]'), inputs.package-manager) }}
+        run: |
+          echo "::error::Unsupported package-manager '$PM': use npm, pnpm or bun"
+          exit 1
+
+      - &setup-pnpm
+        name: Setup pnpm
+        if: inputs.package-manager == 'pnpm'
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: ${{ inputs.working-directory }}/package.json
+
+      - &setup-bun
+        name: Setup Bun
+        if: inputs.package-manager == 'bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ inputs.bun-version }}
+
+      - &setup-node
+        name: Setup Node.js
+        if: hashFiles(format('{0}/{1}', inputs.working-directory, inputs.node-version-file)) != ''
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: ${{ inputs.working-directory }}/${{ inputs.node-version-file }}
+          cache: ${{ inputs.package-manager != 'bun' && inputs.package-manager || '' }}
+          cache-dependency-path: ${{ inputs.working-directory }}/${{ inputs.package-manager == 'pnpm' && 'pnpm-lock.yaml' || 'package-lock.json' }}
+
+      - &install
+        name: Install dependencies
+        run: |
+          case "$PM" in
+            npm) npm ci ;;
+            pnpm) pnpm install --frozen-lockfile ;;
+            bun) bun install --frozen-lockfile ;;
+          esac
+
+      - name: Lint
+        env:
+          SCRIPT: ${{ inputs.lint-script }}
+        run: '"$PM" run "$SCRIPT"'
+
+  build:
+    name: Build
+    if: inputs.build-script != '' || inputs.typecheck-script != ''
+    runs-on: ubuntu-latest
+    defaults:
+      run: *run-defaults
+    steps:
+      - *checkout
+      - *check-package-manager
+      - *setup-pnpm
+      - *setup-bun
+      - *setup-node
+      - *install
+
+      - name: Build
+        if: inputs.build-script != ''
+        env:
+          SCRIPT: ${{ inputs.build-script }}
+        run: '"$PM" run "$SCRIPT"'
+
+      - name: Type-check
+        if: inputs.typecheck-script != ''
+        env:
+          SCRIPT: ${{ inputs.typecheck-script }}
+        run: '"$PM" run "$SCRIPT"'
+
+  test:
+    name: Test
+    if: inputs.test-script != ''
+    runs-on: ubuntu-latest
+    defaults:
+      run: *run-defaults
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    steps:
+      - *checkout
+      - *check-package-manager
+      - *setup-pnpm
+      - *setup-bun
+      - *setup-node
+      - *install
+
+      - name: Test
+        env:
+          SCRIPT: ${{ inputs.test-script }}
+        run: '"$PM" run "$SCRIPT"'
+
+      - name: Upload coverage reports to Codecov
+        if: inputs.codecov && env.CODECOV_TOKEN != ''
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ env.CODECOV_TOKEN }}
+          working-directory: ${{ inputs.working-directory }}
+          files: ${{ inputs.coverage-files }}
+          fail_ci_if_error: false
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && inputs.codecov && env.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ env.CODECOV_TOKEN }}
+          working-directory: ${{ inputs.working-directory }}
+          files: ${{ inputs.junit-files }}
+          report_type: test_results
+          fail_ci_if_error: false
+
+  e2e:
+    name: E2E
+    if: inputs.e2e
+    runs-on: ubuntu-latest
+    defaults:
+      run: *run-defaults
+    steps:
+      - *checkout
+      - *check-package-manager
+      - *setup-pnpm
+      - *setup-bun
+      - *setup-node
+      - *install
+
+      - name: Install Playwright browsers
+        run: |
+          case "$PM" in
+            npm) npx playwright install --with-deps ;;
+            pnpm) pnpm exec playwright install --with-deps ;;
+            bun) bunx playwright install --with-deps ;;
+          esac
+
+      - name: End-to-end tests
+        env:
+          SCRIPT: ${{ inputs.e2e-script }}
+        run: '"$PM" run "$SCRIPT"'
+
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            ${{ inputs.working-directory }}/playwright-report
+            ${{ inputs.working-directory }}/test-results
+          retention-days: 7

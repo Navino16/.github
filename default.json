@@ -1,0 +1,89 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Shared Renovate preset of Navino16's repositories, see STANDARDS.md",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard"
+  ],
+  "baseBranchPatterns": [
+    "develop"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "minimumReleaseAge": "1 day",
+  "platformAutomerge": false,
+  "automergeStrategy": "squash",
+  "automergeSchedule": [
+    "at any time"
+  ],
+  "vulnerabilityAlerts": {
+    "schedule": [
+      "at any time"
+    ],
+    "addLabels": [
+      "security"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": "Group and auto-merge npm and bun minor and patch updates",
+      "matchManagers": [
+        "npm",
+        "bun"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "code-dependencies",
+      "automerge": true
+    },
+    {
+      "description": "Group and auto-merge GitHub Actions minor and patch updates",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "ci-dependencies",
+      "automerge": true
+    },
+    {
+      "description": "Group and auto-merge Docker image minor and patch updates (Dockerfile and compose files)",
+      "matchManagers": [
+        "dockerfile",
+        "docker-compose"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "docker-dependencies",
+      "automerge": true
+    },
+    {
+      "description": "Move every reference to this kit (workflows and preset) in one auto-merged pull request; the major rule below still holds majors back",
+      "matchPackageNames": [
+        "Navino16/.github"
+      ],
+      "groupName": "repo-kit",
+      "automerge": true
+    },
+    {
+      "description": "Majors are never auto-merged; post-it picks them up through the major label",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "addLabels": [
+        "major"
+      ],
+      "automerge": false
+    }
+  ]
+}

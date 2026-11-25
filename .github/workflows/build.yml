@@ -1,0 +1,226 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      image-name:
+        description: Image to push, without tag; empty for ghcr.io/<owner>/<repo> in lower case
+        type: string
+        default: ''
+      arm64:
+        description: Also build a linux/arm64 image
+        type: boolean
+        default: true
+      release-title:
+        description: Name shown in the Discord notification; empty for the repository name
+        type: string
+        default: ''
+      discord-role-id:
+        description: Discord role mentioned in the release notification; empty to mention nobody
+        type: string
+        default: ''
+    secrets:
+      DISCORD_RELEASES_WEBHOOK:
+        required: false
+
+permissions: {}
+
+jobs:
+  image:
+    name: Image name
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.image.outputs.name }}
+    steps:
+      - name: Resolve the image name
+        id: image
+        env:
+          IMAGE_NAME: ${{ inputs.image-name }}
+        run: |
+          name="${IMAGE_NAME:-ghcr.io/${GITHUB_REPOSITORY,,}}"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+  docker:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    needs: [image]
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include: ${{ fromJSON(inputs.arm64 && '[{"platform":"linux/amd64","suffix":"amd64","runner":"ubuntu-latest"},{"platform":"linux/arm64","suffix":"arm64","runner":"ubuntu-24.04-arm"}]' || '[{"platform":"linux/amd64","suffix":"amd64","runner":"ubuntu-latest"}]') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ needs.image.outputs.name }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker build and push
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.suffix }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.suffix }}
+          outputs: type=image,name=${{ needs.image.outputs.name }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ matrix.suffix }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: Merge Manifests
+    runs-on: ubuntu-latest
+    needs: [image, docker]
+    permissions:
+      packages: write
+    env:
+      IMAGE: ${{ needs.image.outputs.name }}
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ needs.image.outputs.name }}
+          flavor: |
+            latest=auto
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=sha-
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create manifest list and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          mapfile -t tags < <(jq -r '.tags[] | "-t", .' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          sources=()
+          for digest in *; do
+            sources+=("$IMAGE@sha256:$digest")
+          done
+          docker buildx imagetools create "${tags[@]}" "${sources[@]}"
+
+      - name: Inspect image
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: docker buildx imagetools inspect "$IMAGE:$VERSION"
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [merge]
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+      pull-requests: read
+    outputs:
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Build Changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v6
+        with:
+          configurationJson: |
+            {
+              "categories": [
+                { "title": "## ⚠️ Breaking Changes", "labels": ["breaking change"] },
+                { "title": "## 🚀 Features", "labels": ["enhancement"] },
+                { "title": "## 🐛 Bug Fixes", "labels": ["bug"] },
+                { "title": "## 🔒 Security", "labels": ["security"] },
+                { "title": "## 📚 Documentation", "labels": ["documentation"] },
+                { "title": "## 📦 Dependencies", "labels": ["dependencies"] }
+              ],
+              "base_branches": ["develop"],
+              "template": "#{{CHANGELOG}}\n\n**Full Changelog**: #{{RELEASE_DIFF}}"
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v3
+        with:
+          body: ${{ steps.changelog.outputs.changelog }}
+          generate_release_notes: false
+
+  notify-discord:
+    name: Discord Release Notification
+    runs-on: ubuntu-latest
+    needs: [release]
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions: {}
+    steps:
+      - name: Send Discord notification
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_RELEASES_WEBHOOK }}
+          ROLE_ID: ${{ inputs.discord-role-id }}
+          TITLE: ${{ inputs.release-title || github.event.repository.name }}
+          TAG: ${{ github.ref_name }}
+          CHANGELOG: ${{ needs.release.outputs.changelog }}
+          URL: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "No DISCORD_RELEASES_WEBHOOK secret, skipping the notification"
+            exit 0
+          fi
+          content=""
+          if [ -n "$ROLE_ID" ]; then
+            content="<@&$ROLE_ID>"
+          fi
+          payload="$(jq -n \
+            --arg content "$content" \
+            --arg title "$TITLE $TAG" \
+            --arg url "$URL" \
+            --arg description "$(head -c 1800 <<< "$CHANGELOG")" \
+            '{content: $content, embeds: [{title: $title, url: $url, description: $description, color: 6500081}]}')"
+          curl -fsS -H "Content-Type: application/json" -d "$payload" "$WEBHOOK_URL"
