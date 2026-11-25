@@ -10,7 +10,7 @@ Repositories always reference a release tag (`X.Y.Z`) of the kit, never a branch
 
 | Path | What it is |
 |---|---|
-| `default.json` | Renovate preset: one-day minimum release age, grouped and auto-merged minor and patch updates, majors labelled `major`, vulnerability alerts at any time, dependency dashboard |
+| `default.json` | Renovate preset: one-day minimum release age, patch, digest and pin updates grouped and auto-merged, minors grouped in one pull request to review, majors labelled `major`, vulnerability alerts at any time, dependency dashboard |
 | `.github/workflows/ci.yml` | Reusable CI: Lint, Build (build + type-check), Test (with Codecov), optional E2E (Playwright), for npm, pnpm or bun |
 | `.github/workflows/build.yml` | Reusable build: multi-platform Docker image on ghcr.io, GitHub release with a changelog on tags, Discord notification |
 | `labels.json`, `actions/sync-labels` | Shared labels and the action that creates or updates them in a repository (it never deletes a label) |
@@ -53,7 +53,7 @@ In the repository, on a branch from `develop`:
 5. After the pull request's checks pass, rename the required checks of the branch ruleset: the CI jobs are now reported as `ci / Lint`, `ci / Build`, `ci / Test`.
 6. Once merged, check that the `Labels` workflow ran and that the Dependency Dashboard shows no configuration error.
 
-The Renovate bypass of the ruleset must be `always` (not `pull_request`), and the repository should only allow squash merges: Renovate then merges grouped updates on its own.
+The Renovate bypass of the ruleset must be `always` (not `pull_request`), and the repository should only allow squash merges: Renovate then merges the grouped patch, digest and pin updates on its own.
 
 ## Releasing the kit
 
