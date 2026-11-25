@@ -68,11 +68,12 @@
       "automerge": true
     },
     {
-      "description": "Move every reference to this kit (workflows and preset) in one pull request",
+      "description": "Move every reference to this kit (workflows and preset) in one auto-merged pull request; the major rule below still holds majors back",
       "matchPackageNames": [
         "Navino16/.github"
       ],
-      "groupName": "repo-kit"
+      "groupName": "repo-kit",
+      "automerge": true
     },
     {
       "description": "Majors are never auto-merged; post-it picks them up through the major label",

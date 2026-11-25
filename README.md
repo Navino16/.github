@@ -38,7 +38,7 @@ Repositories always reference a release tag (`X.Y.Z`) of the kit, never a branch
 | Input | Default | |
 |---|---|---|
 | `image-name` | `ghcr.io/<owner>/<repo>` | |
-| `arm64` | `true` | Also build `linux/arm64` on an arm runner |
+| `arm64` | `true` | Also build `linux/arm64` on the `ubuntu-24.04-arm` runner; set `false` in a private repository if that runner is not available to it |
 | `release-title` | repository name | Title of the Discord notification |
 | `discord-role-id` | none | Role mentioned in the notification; it is sent only when the `DISCORD_RELEASES_WEBHOOK` secret exists |
 

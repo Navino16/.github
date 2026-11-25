@@ -29,6 +29,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      pull-requests: read
     with:
       discord-role-id: ${{ vars.DISCORD_RELEASE_ROLE_ID }}
     secrets: inherit
