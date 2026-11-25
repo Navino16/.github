@@ -48,7 +48,7 @@ What runs and when in an adopting repository: [docs/lifecycle.md](docs/lifecycle
 
 In the repository, on a branch from `develop`:
 
-1. `renovate.json` (or `.github/renovate.json`): `"extends": ["github>Navino16/.github#1.0.0"]`, followed only by the rules specific to the repository. Drop `.github/dependabot.yml` if any (keep Dependabot *alerts* enabled: Renovate reads them).
+1. `renovate.json` (or `.github/renovate.json`): `"extends": ["github>Navino16/.github#1.1.0"]`, followed only by the rules specific to the repository. Drop `.github/dependabot.yml` if any (keep Dependabot *alerts* enabled: Renovate reads them).
 2. Copy the workflows of `templates/workflows/` into `.github/workflows/` and remove the ones they replace. Adjust the inputs to the repository (package manager, scripts, `e2e`, `arm64`…). A repository without a Docker image skips `build.yml`; a repository whose default branch is not `develop` adapts the branches.
 3. Delete `.github/ISSUE_TEMPLATE/` and `.github/PULL_REQUEST_TEMPLATE.md`, unless the repository has a real need of its own: a single template of its own disables every default issue template.
 4. Paste `claude-block.md` into `CLAUDE.md` and remove what it replaces (git workflow, commit rules).
