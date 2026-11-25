@@ -1,0 +1,34 @@
+name: Build Docker Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+    tags: ['*']
+    paths-ignore:
+      - '**.md'
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  ci:
+    uses: Navino16/.github/.github/workflows/ci.yml@1.0.0
+    permissions:
+      contents: read
+    with:
+      codecov: false
+    secrets: inherit
+
+  build:
+    needs: [ci]
+    uses: Navino16/.github/.github/workflows/build.yml@1.0.0
+    permissions:
+      contents: write
+      packages: write
+    with:
+      discord-role-id: ${{ vars.DISCORD_RELEASE_ROLE_ID }}
+    secrets: inherit
