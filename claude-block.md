@@ -1,4 +1,4 @@
-<!-- repo-kit:start 1.1.0 -->
+<!-- repo-kit:start 1.2.0 -->
 ## Shared conventions (Navino16/.github)
 
 This block comes from the [Navino16/.github](https://github.com/Navino16/.github) kit: change it there, never here.
