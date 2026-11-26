@@ -1,0 +1,25 @@
+{
+  "repository": {
+    "default_branch": "main",
+    "allow_squash_merge": true,
+    "allow_merge_commit": false,
+    "allow_rebase_merge": false,
+    "allow_auto_merge": false,
+    "allow_update_branch": true,
+    "delete_branch_on_merge": true,
+    "squash_merge_commit_title": "PR_TITLE",
+    "squash_merge_commit_message": "BLANK",
+    "has_wiki": false,
+    "has_projects": false,
+    "has_discussions": false
+  },
+  "dependabot_alerts": true,
+  "dependabot_security_updates": false,
+  "default_workflow_permissions": "read",
+  "public_only": {
+    "secret_scanning": true,
+    "secret_scanning_push_protection": true,
+    "private_vulnerability_reporting": true,
+    "codeql_default_setup": true
+  }
+}

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Stand-in for `gh api` in tests: reads come from $FAKE_GH_DIR, writes are appended to $FAKE_GH_LOG.
+set -euo pipefail
+[ "$1" = api ] || { echo "fake gh: only 'api' is supported" >&2; exit 2; }
+shift
+method=GET
+path=""
+input=false
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -X) method="$2"; shift 2 ;;
+    --input) input=true; shift 2 ;;
+    *) path="$1"; shift ;;
+  esac
+done
+endpoint="${path#repos/*/*/}"
+[ "$endpoint" = "$path" ] && endpoint=repo
+if [ "$method" != GET ]; then
+  body=""
+  $input && body="$(jq -c . </dev/stdin)"
+  echo "$method $endpoint $body" >>"$FAKE_GH_LOG"
+  exit 0
+fi
+file="$FAKE_GH_DIR/${endpoint//\//_}.json"
+if [ "$endpoint" = vulnerability-alerts ]; then
+  [ -e "$file" ] && exit 0 || { echo "HTTP 404" >&2; exit 1; }
+fi
+[ -e "$file" ] || { echo "HTTP 404" >&2; exit 1; }
+cat "$file"

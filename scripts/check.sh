@@ -14,6 +14,10 @@ npx --yes --package "renovate@${RENOVATE_VERSION}" -- renovate-config-validator 
 step "Label sync"
 tests/sync-labels.test.sh
 
+step "Repository settings"
+jq empty settings/repository.json
+tests/apply-settings.test.sh
+
 step "Ruleset"
 jq empty rulesets/main-develop.json
 tests/apply-ruleset.test.sh
