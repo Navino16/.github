@@ -15,6 +15,7 @@ What runs and when in an adopting repository: [docs/lifecycle.md](docs/lifecycle
 | `default.json` | Renovate preset: one-day minimum release age, patch, digest and pin updates grouped and auto-merged, minors grouped in one pull request to review, majors labelled `major`, vulnerability alerts at any time, dependency dashboard |
 | `.github/workflows/ci.yml` | Reusable CI: Lint, Build (build + type-check), Test (with Codecov), optional E2E (Playwright), for npm, pnpm or bun |
 | `.github/workflows/build.yml` | Reusable build: multi-platform Docker image on ghcr.io, GitHub release with a changelog on tags, Discord notification |
+| `.github/workflows/close-issues.yml` | Reusable workflow closing the issues a pull request references with a closing keyword (`Fixes #12`) when it merges into `develop`: GitHub only does it for the default branch. Bot pull requests, pull request numbers and closed issues are skipped |
 | `labels.json`, `actions/sync-labels` | Shared labels and the action that creates or updates them in a repository (it never deletes a label) |
 | `.github/ISSUE_TEMPLATE`, `.github/PULL_REQUEST_TEMPLATE.md`, `.github/SECURITY.md` | Default community health files |
 | `templates/workflows/` | The caller workflows a repository copies |
