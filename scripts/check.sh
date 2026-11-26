@@ -14,6 +14,10 @@ npx --yes --package "renovate@${RENOVATE_VERSION}" -- renovate-config-validator 
 step "Label sync"
 tests/sync-labels.test.sh
 
+step "Ruleset"
+jq empty rulesets/main-develop.json
+tests/apply-ruleset.test.sh
+
 step "Workflows (actionlint)"
 docker run --rm -v "$PWD:/repo" -w /repo "rhysd/actionlint:${ACTIONLINT_VERSION}" -color .github/workflows/*.yml templates/workflows/*.yml
 
