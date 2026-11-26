@@ -55,6 +55,12 @@ expect 'PATCH code-scanning/default-setup {"state":"configured"}'
 expect 'PUT actions/permissions/workflow {"default_workflow_permissions":"read","can_approve_pull_request_reviews":true}'
 [ "$(wc -l <<<"$log")" -eq 6 ] && pass "nothing else written" || fail "unexpected writes: $log"
 
+fixture "$TMP/squash" public
+jq '.squash_merge_commit_message = "PR_BODY"' "$TMP/squash/repo.json" >"$TMP/r" && mv "$TMP/r" "$TMP/squash/repo.json"
+run "$TMP/squash" owner/repo >/dev/null || fail "squash message drift exits 0"
+grep -qxF 'PATCH repo {"squash_merge_commit_message":"BLANK","squash_merge_commit_title":"PR_TITLE"}' "$FAKE_GH_LOG" \
+  && pass "squash title and message are sent together" || fail "squash pair: $(cat "$FAKE_GH_LOG")"
+
 fixture "$TMP/private" private
 rm "$TMP/private/private-vulnerability-reporting.json" "$TMP/private/code-scanning_default-setup.json"
 jq 'del(.security_and_analysis)' "$TMP/private/repo.json" >"$TMP/r" && mv "$TMP/r" "$TMP/private/repo.json"
