@@ -13,6 +13,7 @@ flowchart LR
   other --> gate
   gate --> squash["Squash merge<br/>one commit on develop"]
   squash --> dev(["→ 2. push on develop"])
+  squash --> close["Close linked issues<br/>Fixes #12 in the PR body"]
 ```
 
 ## 2. A push on develop
