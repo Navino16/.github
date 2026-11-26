@@ -21,6 +21,7 @@ What runs and when in an adopting repository: [docs/lifecycle.md](docs/lifecycle
 | `templates/workflows/` | The caller workflows a repository copies |
 | `claude-block.md` | The shared block of every repository's `CLAUDE.md` |
 | `STANDARDS.md` | The target stack and the convergence rule |
+| `settings/repository.json`, `scripts/apply-settings.sh` | Repository settings shared by every repository (squash-only merges with the pull request title, branch cleanup, Dependabot alerts without Dependabot pull requests, secret scanning, private vulnerability reporting, CodeQL, read-only default token) and the script that applies them |
 | `rulesets/main-develop.json`, `scripts/apply-ruleset.sh` | The branch ruleset of every public repository, exported from Varken, and the script that applies it |
 
 ### `ci.yml` inputs
@@ -54,8 +55,9 @@ In the repository, on a branch from `develop`:
 2. Copy the workflows of `templates/workflows/` into `.github/workflows/` and remove the ones they replace. Adjust the inputs to the repository (package manager, scripts, `e2e`, `arm64`…). A repository without a Docker image skips `build.yml`; a repository whose default branch is not `develop` adapts the branches.
 3. Delete `.github/ISSUE_TEMPLATE/` and `.github/PULL_REQUEST_TEMPLATE.md`, unless the repository has a real need of its own: a single template of its own disables every default issue template.
 4. Paste `claude-block.md` into `CLAUDE.md` and remove what it replaces (git workflow, commit rules).
-5. After the pull request's checks pass, apply the shared ruleset from a clone of the kit: `scripts/apply-ruleset.sh [--e2e] Navino16/<repo>` (`--dry-run` prints it). It creates or replaces the `Main/Develop` ruleset: protected `main` and `develop`, squash-only pull requests with one approval and resolved conversations, required checks up to date with the target branch: `ci / Lint`, `ci / Build`, `ci / Test` (plus `ci / E2E` with `--e2e`) and CodeQL, Renovate allowed to bypass. A private repository cannot have rulesets without GitHub Pro.
-6. Once merged, check that the `Labels` workflow ran and that the Dependency Dashboard shows no configuration error.
+5. Align the repository settings: `scripts/apply-settings.sh --dry-run Navino16/<repo>` lists the drift, the same command without `--dry-run` applies it (`--default-branch NAME` when the default branch is not `main`). Check first that the repository's own workflows declare their `permissions:`, since the default token becomes read-only. The Actions right to create and approve pull requests is left as it is.
+6. After the pull request's checks pass, apply the shared ruleset from a clone of the kit: `scripts/apply-ruleset.sh [--e2e] Navino16/<repo>` (`--dry-run` prints it). It creates or replaces the `Main/Develop` ruleset: protected `main` and `develop`, squash-only pull requests with one approval and resolved conversations, required checks up to date with the target branch: `ci / Lint`, `ci / Build`, `ci / Test` (plus `ci / E2E` with `--e2e`) and CodeQL, Renovate allowed to bypass. A private repository cannot have rulesets without GitHub Pro.
+7. Once merged, check that the `Labels` workflow ran and that the Dependency Dashboard shows no configuration error.
 
 The Renovate bypass of the ruleset must be `always` (not `pull_request`), and the repository should only allow squash merges: Renovate then merges the grouped patch, digest and pin updates on its own.
 
