@@ -33,6 +33,12 @@ while IFS=$'\t' read -r key from to; do
   [ -n "$key" ] && change "$key" "$from" "$to"
 done < <(jq -r --argjson cur "$current" 'to_entries[] | [.key, ($cur[.key] | tostring), (.value | tostring)] | @tsv' <<<"$patch")
 
+# GitHub rejects one squash commit setting sent without the other.
+patch="$(jq -c --argjson want "$want" '
+  if has("squash_merge_commit_title") or has("squash_merge_commit_message")
+  then . + ($want.repository | {squash_merge_commit_title, squash_merge_commit_message})
+  else . end' <<<"$patch")"
+
 if [ "$public" = true ]; then
   security="{}"
   for feature in secret_scanning secret_scanning_push_protection; do
