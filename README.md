@@ -64,6 +64,8 @@ The Renovate bypass of the ruleset must be `always` (not `pull_request`), and th
 
 ## Releasing the kit
 
-1. `release/X.Y.Z` from `develop`, then `scripts/set-version.sh X.Y.Z` and `scripts/check.sh`.
-2. Pull request to `main`, merged with a merge commit; tag `X.Y.Z` on `main` and `gh release create X.Y.Z --generate-notes`.
-3. Merge `main` back into `develop`.
+The kit follows the release rule of the shared block:
+
+1. `git flow release start X.Y.Z`, then `scripts/set-version.sh X.Y.Z`, `scripts/check.sh` and a commit.
+2. `git flow release finish X.Y.Z`, which merges into `main`, tags `X.Y.Z` and merges back into `develop`.
+3. `git push origin main develop --tags`, never `--force`, then `gh release create X.Y.Z --generate-notes`.
