@@ -4,9 +4,10 @@ This repository is the shared kit of Navino16's personal repositories (see `READ
 
 ## Commands
 
-- `scripts/check.sh`: every check (Renovate configs, label sync tests, actionlint on workflows and templates, labels of the issue forms, version references). Needs Docker and Node; `kit-check.yml` runs it on pull requests, along with `ci.yml` on the npm, pnpm and bun fixtures of `tests/fixtures/`.
+- `scripts/check.sh`: every check (Renovate configs, label sync and repository sync tests, actionlint on workflows and templates, labels of the issue forms, version references). Needs Docker and Node; `kit-check.yml` runs it on pull requests, along with `ci.yml` on the npm, pnpm and bun fixtures of `tests/fixtures/`.
 - `scripts/apply-settings.sh [--dry-run] [--default-branch NAME] <owner/repo>`: aligns a repository's settings on `settings/repository.json`; `tests/fake-gh/gh` stands in for `gh` in its tests.
 - `scripts/apply-ruleset.sh [--dry-run] [--e2e] <owner/repo>`: creates or updates a repository's `Main/Develop` ruleset from `rulesets/main-develop.json`.
+- `scripts/sync-repo.sh [--apply block,ruleset,settings] <owner/repo>...`: reports how repositories drift from the kit and fixes only the parts named with `--apply`.
 - `scripts/set-version.sh X.Y.Z`: moves `VERSION`, the block markers and every `@X.Y.Z` / `#X.Y.Z` reference of the README and the templates.
 
 ## Rules

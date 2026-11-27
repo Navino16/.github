@@ -22,6 +22,9 @@ step "Ruleset"
 jq empty rulesets/main-develop.json
 tests/apply-ruleset.test.sh
 
+step "Repository sync"
+tests/sync-repo.test.sh
+
 step "Workflows (actionlint)"
 docker run --rm -v "$PWD:/repo" -w /repo "rhysd/actionlint:${ACTIONLINT_VERSION}" -color .github/workflows/*.yml templates/workflows/*.yml
 
