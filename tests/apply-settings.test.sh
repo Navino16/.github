@@ -10,28 +10,14 @@ failures=0
 fail() { echo "FAIL: $1"; failures=$((failures + 1)); }
 pass() { echo "ok: $1"; }
 
-conforming_repo() {
-  jq -n --arg visibility "$1" '{visibility: $visibility, default_branch: "main", allow_squash_merge: true, allow_merge_commit: false,
-    allow_rebase_merge: false, allow_auto_merge: false, allow_update_branch: true, delete_branch_on_merge: true,
-    squash_merge_commit_title: "PR_TITLE", squash_merge_commit_message: "BLANK", has_wiki: false, has_projects: false,
-    has_discussions: false, security_and_analysis: {secret_scanning: {status: "enabled"}, secret_scanning_push_protection: {status: "enabled"}}}'
-}
-fixture() { # dir, visibility
-  mkdir -p "$1"
-  conforming_repo "$2" >"$1/repo.json"
-  echo '{}' >"$1/vulnerability-alerts.json"
-  echo '{"enabled": false, "paused": false}' >"$1/automated-security-fixes.json"
-  echo '{"enabled": true}' >"$1/private-vulnerability-reporting.json"
-  echo '{"state": "configured"}' >"$1/code-scanning_default-setup.json"
-  echo '{"default_workflow_permissions": "read", "can_approve_pull_request_reviews": true}' >"$1/actions_permissions_workflow.json"
-}
+. tests/fake-gh/fixtures.sh
 run() { : >"$FAKE_GH_LOG"; FAKE_GH_DIR="$1" bash "$SCRIPT" "${@:2}" 2>&1; }
 
-fixture "$TMP/ok" public
+settings_fixture "$TMP/ok" public
 out="$(run "$TMP/ok" owner/repo)" || fail "conforming repo exits 0"
 [ ! -s "$FAKE_GH_LOG" ] && pass "conforming repo: no write" || fail "conforming repo wrote: $(cat "$FAKE_GH_LOG")"
 
-fixture "$TMP/drift" public
+settings_fixture "$TMP/drift" public
 jq '.allow_merge_commit = true | .has_wiki = true | .security_and_analysis.secret_scanning.status = "disabled"' \
   "$TMP/drift/repo.json" >"$TMP/r" && mv "$TMP/r" "$TMP/drift/repo.json"
 rm "$TMP/drift/vulnerability-alerts.json"
@@ -55,13 +41,13 @@ expect 'PATCH code-scanning/default-setup {"state":"configured"}'
 expect 'PUT actions/permissions/workflow {"default_workflow_permissions":"read","can_approve_pull_request_reviews":true}'
 [ "$(wc -l <<<"$log")" -eq 6 ] && pass "nothing else written" || fail "unexpected writes: $log"
 
-fixture "$TMP/squash" public
+settings_fixture "$TMP/squash" public
 jq '.squash_merge_commit_message = "PR_BODY"' "$TMP/squash/repo.json" >"$TMP/r" && mv "$TMP/r" "$TMP/squash/repo.json"
 run "$TMP/squash" owner/repo >/dev/null || fail "squash message drift exits 0"
 grep -qxF 'PATCH repo {"squash_merge_commit_message":"BLANK","squash_merge_commit_title":"PR_TITLE"}' "$FAKE_GH_LOG" \
   && pass "squash title and message are sent together" || fail "squash pair: $(cat "$FAKE_GH_LOG")"
 
-fixture "$TMP/private" private
+settings_fixture "$TMP/private" private
 rm "$TMP/private/private-vulnerability-reporting.json" "$TMP/private/code-scanning_default-setup.json"
 jq 'del(.security_and_analysis)' "$TMP/private/repo.json" >"$TMP/r" && mv "$TMP/r" "$TMP/private/repo.json"
 run "$TMP/private" owner/repo >/dev/null || fail "private repo exits 0"
