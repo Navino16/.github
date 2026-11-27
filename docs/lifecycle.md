@@ -44,7 +44,7 @@ A merged pull request is a push on develop: section 2 follows.
 
 ## 4. A release
 
-Git-flow, done locally with real merges (no squash).
+Git-flow, done locally by the maintainer with `git flow release start/finish`: real merges, no squash. The branches and the tag are pushed through the admin bypass of the ruleset, as fast-forwards, never with `--force`.
 
 ```mermaid
 flowchart LR
